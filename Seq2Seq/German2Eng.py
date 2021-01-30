@@ -5,6 +5,7 @@ from torchtext.datasets import Multi30k
 from torchtext.data import Field, BucketIterator # preprocessing
 import spacy
 import random
+from utils import translate_sentence, save_checkpoint, load_checkpoint
 
 # Data Processing using Torchtext
 spacy_ger = spacy.load('de_core_news_sm')
@@ -131,7 +132,23 @@ optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 pad_idx = english.vocab.stoi['<pad>']
 criterion = nn.CrossEntropyLoss(ignore_index=pad_idx)
 
+if load_model:
+    load_checkpoint(torch.load('my_checkpoint.pth.ptar'), model, optimizer)
+
+sentence = "ein boot mit mehreren männern darauf wird von einem großen pferdegespann ans ufer gezogen."
+
 for epoch in range(num_epochs):
+    checkpoint = {'state_dict':model.state_dict(), 'optimizer':optimizer.state_dict()}
+    save_checkpoint(checkpoint)
+
+    model.eval()
+
+    translated_sentence = translate_sentence(
+        model, sentence, german, english, device, max_length=70
+    )
+    print(f"Translated example sentence: \n {translated_sentence}")
+    model.train()
+
     for batch_idx, batch in enumerate(train_iterator):
         inp_data = batch.src.to(device)
         target = batch.trg.to(device)
